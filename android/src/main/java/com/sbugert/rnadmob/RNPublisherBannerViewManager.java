@@ -1,8 +1,9 @@
 package com.sbugert.rnadmob;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
 import android.view.View;
+
+import androidx.annotation.Nullable;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -17,18 +18,18 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.facebook.react.views.view.ReactViewGroup;
 import com.google.android.gms.ads.AdListener;
-import com.google.android.gms.ads.doubleclick.AppEventListener;
-import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.admanager.AdManagerAdRequest;
+import com.google.android.gms.ads.admanager.AdManagerAdView;
+import com.google.android.gms.ads.admanager.AppEventListener;
 import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.doubleclick.PublisherAdView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
 
-    protected PublisherAdView adView;
+    protected AdManagerAdView adView;
 
     String[] testDevices;
     AdSize[] validAdSizes;
@@ -44,7 +45,7 @@ class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
         if (this.adView != null) this.adView.destroy();
 
         final Context context = getContext();
-        this.adView = new PublisherAdView(context);
+        this.adView = new AdManagerAdView(context);
         this.adView.setAppEventListener(this);
         this.adView.setAdListener(new AdListener() {
             @Override
@@ -60,19 +61,19 @@ class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
             }
 
             @Override
-            public void onAdFailedToLoad(int errorCode) {
+            public void onAdFailedToLoad(LoadAdError adError) {
                 String errorMessage = "Unknown error";
-                switch (errorCode) {
-                    case PublisherAdRequest.ERROR_CODE_INTERNAL_ERROR:
+                switch (adError.getCode()) {
+                    case AdManagerAdRequest.ERROR_CODE_INTERNAL_ERROR:
                         errorMessage = "Internal error, an invalid response was received from the ad server.";
                         break;
-                    case PublisherAdRequest.ERROR_CODE_INVALID_REQUEST:
+                    case AdManagerAdRequest.ERROR_CODE_INVALID_REQUEST:
                         errorMessage = "Invalid ad request, possibly an incorrect ad unit ID was given.";
                         break;
-                    case PublisherAdRequest.ERROR_CODE_NETWORK_ERROR:
+                    case AdManagerAdRequest.ERROR_CODE_NETWORK_ERROR:
                         errorMessage = "The ad request was unsuccessful due to network connectivity.";
                         break;
-                    case PublisherAdRequest.ERROR_CODE_NO_FILL:
+                    case AdManagerAdRequest.ERROR_CODE_NO_FILL:
                         errorMessage = "The ad request was successful, but no ad was returned due to lack of ad inventory.";
                         break;
                 }
@@ -93,10 +94,6 @@ class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
                 sendEvent(RNPublisherBannerViewManager.EVENT_AD_CLOSED, null);
             }
 
-            @Override
-            public void onAdLeftApplication() {
-                sendEvent(RNPublisherBannerViewManager.EVENT_AD_LEFT_APPLICATION, null);
-            }
         });
         this.addView(this.adView);
     }
@@ -145,17 +142,18 @@ class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
         AdSize[] adSizesArray = adSizes.toArray(new AdSize[adSizes.size()]);
         this.adView.setAdSizes(adSizesArray);
 
-        PublisherAdRequest.Builder adRequestBuilder = new PublisherAdRequest.Builder();
-        if (testDevices != null) {
-            for (int i = 0; i < testDevices.length; i++) {
-                String testDevice = testDevices[i];
-                if (testDevice == "SIMULATOR") {
-                    testDevice = PublisherAdRequest.DEVICE_ID_EMULATOR;
-                }
-                adRequestBuilder.addTestDevice(testDevice);
-            }
-        }
-        PublisherAdRequest adRequest = adRequestBuilder.build();
+        AdManagerAdRequest.Builder adRequestBuilder = new AdManagerAdRequest.Builder();
+        // todo:: add test device in request configuration
+//        if (testDevices != null) {
+//            for (int i = 0; i < testDevices.length; i++) {
+//                String testDevice = testDevices[i];
+//                if (testDevice == "SIMULATOR") {
+//                    testDevice = AdManagerAdRequest.DEVICE_ID_EMULATOR;
+//                }
+//                adRequestBuilder.addTestDevice(testDevice);
+//            }
+//        }
+        AdManagerAdRequest adRequest = adRequestBuilder.build();
         this.adView.loadAd(adRequest);
     }
 

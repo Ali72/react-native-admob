@@ -1,9 +1,11 @@
 package com.sbugert.rnadmob;
 
+import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.Nullable;
-import android.util.Pair;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
@@ -14,11 +16,13 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableNativeArray;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +40,7 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
 
     ReactApplicationContext mContext;
     Map<String, InterstitialAd> mInterstitialAds;
+    Map<String, InterstitialAdLoadRequest> mInterstitialAdLoadRequests;
     String[] testDevices;
 
     private final Map<String, Promise> mRequestAdPromises;
@@ -59,23 +64,32 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void setAdUnitID(final String adUnitID) {
         if (!mInterstitialAds.containsKey(adUnitID)) {
-            mInterstitialAds.put(adUnitID, new InterstitialAd(mContext));
-            mInterstitialAds.get(adUnitID).setAdUnitId(adUnitID);
+            mInterstitialAdLoadRequests.put(adUnitID, new InterstitialAdLoadRequest(mContext, adUnitID));
             new Handler(Looper.getMainLooper()).post(new Runnable() {
               @Override
               public void run() {
-                mInterstitialAds.get(adUnitID).setAdListener(new AdListener() {
+                mInterstitialAdLoadRequests.get(adUnitID).loadCallback = new InterstitialAdLoadCallback() {
+
                   @Override
-                  public void onAdClosed() {
+                  public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
                     WritableMap params = Arguments.createMap();
                     params.putString("adUnitId", adUnitID);
-                    sendEvent(EVENT_AD_CLOSED, params);
+                    sendEvent(EVENT_AD_LOADED, params);
+                    mInterstitialAdLoadRequests.get(adUnitID).isLoading = false;
+                    mInterstitialAdLoadRequests.get(adUnitID).isLoaded = true;
+                    mInterstitialAds.put(adUnitID, interstitialAd);
+                    if (mRequestAdPromises.get(adUnitID) != null) {
+                      mRequestAdPromises.get(adUnitID).resolve(null);
+                      // todo:: check how to set promise to null
+                      mRequestAdPromises.put(adUnitID, null);
+                    }
                   }
+
                   @Override
-                  public void onAdFailedToLoad(int errorCode) {
+                  public void onAdFailedToLoad(LoadAdError adError) {
                     String errorString = "ERROR_UNKNOWN";
                     String errorMessage = "Unknown error";
-                    switch (errorCode) {
+                    switch (adError.getCode()) {
                       case AdRequest.ERROR_CODE_INTERNAL_ERROR:
                         errorString = "ERROR_CODE_INTERNAL_ERROR";
                         errorMessage = "Internal error, an invalid response was received from the ad server.";
@@ -98,36 +112,16 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
                     event.putString("message", errorMessage);
                     event.putString("adUnitId", adUnitID);
                     sendEvent(EVENT_AD_FAILED_TO_LOAD, event);
+                    mInterstitialAdLoadRequests.get(adUnitID).isLoading = false;
+                    mInterstitialAdLoadRequests.get(adUnitID).isLoaded = false;
                     if (mRequestAdPromises.get(adUnitID) != null) {
                       mRequestAdPromises.get(adUnitID).reject(errorString, errorMessage);
                       // todo:: check how to set promise to null
                       mRequestAdPromises.put(adUnitID, null);
                     }
                   }
-                  @Override
-                  public void onAdLeftApplication() {
-                    WritableMap params = Arguments.createMap();
-                    params.putString("adUnitId", adUnitID);
-                    sendEvent(EVENT_AD_LEFT_APPLICATION, params);
-                  }
-                  @Override
-                  public void onAdLoaded() {
-                    WritableMap params = Arguments.createMap();
-                    params.putString("adUnitId", adUnitID);
-                    sendEvent(EVENT_AD_LOADED, params);
-                    if (mRequestAdPromises.get(adUnitID) != null) {
-                      mRequestAdPromises.get(adUnitID).resolve(null);
-                      // todo:: check how to set promise to null
-                      mRequestAdPromises.put(adUnitID, null);
-                    }
-                  }
-                  @Override
-                  public void onAdOpened() {
-                    WritableMap params = Arguments.createMap();
-                    params.putString("adUnitId", adUnitID);
-                    sendEvent(EVENT_AD_OPENED, params);
-                  }
-                });
+
+                };
               }
             });
         }
@@ -145,25 +139,27 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run () {
-              if (mInterstitialAds.containsKey(adUnitId)) {
-                if (mInterstitialAds.get(adUnitId).isLoaded() || mInterstitialAds.get(adUnitId).isLoading()) {
+            if (mInterstitialAdLoadRequests.containsKey(adUnitId)) {
+                if (mInterstitialAdLoadRequests.get(adUnitId).isLoading || mInterstitialAdLoadRequests.get(adUnitId).isLoaded) {
                   promise.reject("E_AD_ALREADY_LOADED", "Ad is already loaded.");
                 } else {
                   mRequestAdPromises.put(adUnitId, promise);
                   AdRequest.Builder adRequestBuilder = new AdRequest.Builder();
-                  if (testDevices != null) {
-                    for (int i = 0; i < testDevices.length; i++) {
-                      String testDevice = testDevices[i];
-                      if (testDevice == "SIMULATOR") {
-                        testDevice = AdRequest.DEVICE_ID_EMULATOR;
-                      }
-                      adRequestBuilder.addTestDevice(testDevice);
-                    }
-                  }
+                  // todo:: add test devices at configuration
+//                    if (testDevices != null) {
+//                      for (int i = 0; i < testDevices.length; i++) {
+//                        String testDevice = testDevices[i];
+//                        if (testDevice == "SIMULATOR") {
+//                          testDevice = AdRequest.DEVICE_ID_EMULATOR;
+//                        }
+//                        adRequestBuilder.addTestDevice(testDevice);
+//                      }
+//                    }
                   AdRequest adRequest = adRequestBuilder.build();
-                  mInterstitialAds.get(adUnitId).loadAd(adRequest);
+                  mInterstitialAdLoadRequests.get(adUnitId).adRequest = adRequest;
+                  mInterstitialAdLoadRequests.get(adUnitId).loadAd();
                 }
-              }
+            }
             }
         });
     }
@@ -173,8 +169,35 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run () {
-                if (mInterstitialAds.get(adUnitId).isLoaded()) {
-                    mInterstitialAds.get(adUnitId).show();
+                if (mInterstitialAdLoadRequests.get(adUnitId).isLoaded && mInterstitialAds.get(adUnitId)!=null) {
+                    mInterstitialAds.get(adUnitId).setFullScreenContentCallback(new FullScreenContentCallback(){
+                      @Override
+                      public void onAdDismissedFullScreenContent() {
+                        // Called when fullscreen content is dismissed.
+                        // Log.d("TAG", "The ad was dismissed.");
+                        sendEvent(EVENT_AD_CLOSED, null);
+                      }
+
+                      @Override
+                      public void onAdFailedToShowFullScreenContent(AdError adError) {
+                        // Called when fullscreen content failed to show.
+                        // Log.d("TAG", "The ad failed to show.");
+                      }
+
+                      @Override
+                      public void onAdShowedFullScreenContent() {
+                        // Called when fullscreen content is shown.
+                        // Make sure to set your reference to null so you don't
+                        // show it a second time.
+                        // mInterstitialAd = null;
+                        // Log.d("TAG", "The ad was shown.");
+                        mInterstitialAdLoadRequests.get(adUnitId).isLoading = false;
+                        mInterstitialAdLoadRequests.get(adUnitId).isLoaded = false;
+                        mInterstitialAds.remove(adUnitId);
+                        sendEvent(EVENT_AD_LEFT_APPLICATION, null);
+                      }
+                    });
+                    mInterstitialAds.get(adUnitId).show(getCurrentActivity());
                     promise.resolve(null);
                 } else {
                     promise.reject("E_AD_NOT_READY", "Ad is not ready.");
@@ -189,7 +212,7 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
             @Override
             public void run () {
               if (mInterstitialAds.containsKey(adUnitId)){
-                callback.invoke(mInterstitialAds.get(adUnitId).isLoaded());
+                callback.invoke(mInterstitialAdLoadRequests.get(adUnitId).isLoaded);
               } else {
                 callback.invoke(false);
               }
