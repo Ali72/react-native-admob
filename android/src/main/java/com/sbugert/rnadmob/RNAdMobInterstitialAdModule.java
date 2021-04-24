@@ -55,6 +55,7 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
         mContext = reactContext;
         mInterstitialAds = new HashMap<>();
         mRequestAdPromises = new HashMap<>();
+        mInterstitialAdLoadRequests = new HashMap<>();
     }
 
     private void sendEvent(String eventName, @Nullable WritableMap params) {
