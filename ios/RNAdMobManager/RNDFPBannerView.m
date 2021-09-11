@@ -15,14 +15,16 @@
 
 @implementation RNDFPBannerView
 {
-    DFPBannerView  *_bannerView;
+    GAMBannerView  *_bannerView;
 }
 
 - (void)dealloc
 {
+    NSLog(@"RNDFPBannerView Object deallocated");
     _bannerView.delegate = nil;
     _bannerView.adSizeDelegate = nil;
     _bannerView.appEventDelegate = nil;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -33,14 +35,19 @@
         UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
         UIViewController *rootViewController = [keyWindow rootViewController];
 
-        _bannerView = [[DFPBannerView alloc] initWithAdSize:kGADAdSizeBanner];
+        _bannerView = [[GAMBannerView alloc] initWithAdSize:kGADAdSizeBanner];
         _bannerView.delegate = self;
         _bannerView.adSizeDelegate = self;
         _bannerView.appEventDelegate = self;
         _bannerView.rootViewController = rootViewController;
         [self addSubview:_bannerView];
     }
-
+    
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(willLeaveApplication:)
+     name:UIApplicationWillResignActiveNotification
+     object:nil];
     return self;
 }
 
@@ -54,7 +61,7 @@
 
 - (void)loadBanner {
     GADRequest *request = [GADRequest request];
-    request.testDevices = _testDevices;
+    GADMobileAds.sharedInstance.requestConfiguration.testDeviceIdentifiers = _testDevices;
     [_bannerView loadRequest:request];
 }
 
@@ -74,7 +81,7 @@
 
 - (void)setTestDevices:(NSArray *)testDevices
 {
-    _testDevices = RNAdMobProcessTestDevices(testDevices, kDFPSimulatorID);
+    _testDevices = RNAdMobProcessTestDevices(testDevices, kGADSimulatorID);
 }
 
 -(void)layoutSubviews
@@ -86,7 +93,7 @@
 # pragma mark GADBannerViewDelegate
 
 /// Tells the delegate an ad request loaded an ad.
-- (void)adViewDidReceiveAd:(DFPBannerView *)adView
+- (void)adViewDidReceiveAd:(GAMBannerView *)adView
 {
     if (self.onSizeChange) {
         self.onSizeChange(@{
@@ -99,8 +106,8 @@
 }
 
 /// Tells the delegate an ad request failed.
-- (void)adView:(DFPBannerView *)adView
-didFailToReceiveAdWithError:(GADRequestError *)error
+- (void)bannerView:(GAMBannerView *)adView
+didFailToReceiveAdWithError:(NSError *)error
 {
     if (self.onAdFailedToLoad) {
         self.onAdFailedToLoad(@{ @"error": @{ @"message": [error localizedDescription] } });
@@ -109,7 +116,7 @@ didFailToReceiveAdWithError:(GADRequestError *)error
 
 /// Tells the delegate that a full screen view will be presented in response
 /// to the user clicking on an ad.
-- (void)adViewWillPresentScreen:(DFPBannerView *)adView
+- (void)bannerViewWillPresentScreen:(GAMBannerView *)adView
 {
     if (self.onAdOpened) {
         self.onAdOpened(@{});
@@ -117,7 +124,7 @@ didFailToReceiveAdWithError:(GADRequestError *)error
 }
 
 /// Tells the delegate that the full screen view will be dismissed.
-- (void)adViewWillDismissScreen:(__unused DFPBannerView *)adView
+- (void)bannerViewWillDismissScreen:(__unused GAMBannerView *)adView
 {
     if (self.onAdClosed) {
         self.onAdClosed(@{});
@@ -126,11 +133,19 @@ didFailToReceiveAdWithError:(GADRequestError *)error
 
 /// Tells the delegate that a user click will open another app (such as
 /// the App Store), backgrounding the current app.
-- (void)adViewWillLeaveApplication:(DFPBannerView *)adView
+//- (void)bannerViewWillLeaveApplication:(GAMBannerView *)adView
+//{
+//    if (self.onAdLeftApplication) {
+//        self.onAdLeftApplication(@{});
+//    }
+//}
+
+- (void)willLeaveApplication:(id) sender
 {
     if (self.onAdLeftApplication) {
-        self.onAdLeftApplication(@{});
+            self.onAdLeftApplication(@{});
     }
+    NSLog(@"applicationDidEnterBackground");
 }
 
 # pragma mark GADAdSizeDelegate

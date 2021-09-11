@@ -62,7 +62,7 @@ export default class Example extends Component {
 
     AdMobInterstitial.setTestDevices([AdMobInterstitial.simulatorId]);
     AdMobInterstitial.setAdUnitID('ca-app-pub-3940256099942544/1033173712');
-
+    AdMobInterstitial.setAdUnitID('ca-app-pub-3940256099942544/8691691433');
     AdMobInterstitial.addEventListener('adLoaded', () =>
       console.log('AdMobInterstitial adLoaded'),
     );
@@ -74,13 +74,22 @@ export default class Example extends Component {
     );
     AdMobInterstitial.addEventListener('adClosed', () => {
       console.log('AdMobInterstitial => adClosed');
-      AdMobInterstitial.requestAd().catch(error => console.warn(error));
+      AdMobInterstitial.requestAd(
+        'ca-app-pub-3940256099942544/1033173712',
+      ).catch(error => console.warn(error));
+      AdMobInterstitial.requestAd(
+        'ca-app-pub-3940256099942544/8691691433',
+      ).catch(error => console.warn(error));
     });
     AdMobInterstitial.addEventListener('adLeftApplication', () =>
       console.log('AdMobInterstitial => adLeftApplication'),
     );
-
-    AdMobInterstitial.requestAd().catch(error => console.warn(error));
+    AdMobInterstitial.requestAd('ca-app-pub-3940256099942544/8691691433').catch(
+      error => console.warn(error),
+    );
+    AdMobInterstitial.requestAd('ca-app-pub-3940256099942544/1033173712').catch(
+      error => console.warn(error),
+    );
   }
 
   componentWillUnmount() {
@@ -93,7 +102,14 @@ export default class Example extends Component {
   }
 
   showInterstitial() {
-    AdMobInterstitial.showAd().catch(error => console.warn(error));
+    AdMobInterstitial.showAd('ca-app-pub-3940256099942544/1033173712').catch(
+      error => console.warn(error),
+    );
+  }
+  showInterstitialVideo() {
+    AdMobInterstitial.showAd('ca-app-pub-3940256099942544/8691691433').catch(
+      error => console.warn(error),
+    );
   }
 
   render() {
@@ -132,6 +148,10 @@ export default class Example extends Component {
             <Button
               title="Show Interstitial and preload next"
               onPress={this.showInterstitial}
+            />
+            <Button
+              title="Show InterstitialVideo and preload next"
+              onPress={this.showInterstitialVideo}
             />
           </BannerExample>
           <BannerExample title="DFP - Multiple Ad Sizes">

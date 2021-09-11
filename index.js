@@ -9,7 +9,7 @@ module.exports = {
   get PublisherBanner() {
     return require('./RNPublisherBanner').default;
   },
-  // get AdMobRewarded() {
-  //   return require('./RNAdMobRewarded').default;
-  // },
+  get AdMobRewarded() {
+    return require('./RNAdMobRewarded').default;
+  },
 };

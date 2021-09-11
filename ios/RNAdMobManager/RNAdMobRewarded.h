@@ -8,5 +8,7 @@
 
 @import GoogleMobileAds;
 
-@interface RNAdMobInterstitial : RCTEventEmitter <RCTBridgeModule, GADInterstitialDelegate>
+@interface RNAdMobRewarded : RCTEventEmitter <RCTBridgeModule, GADFullScreenContentDelegate>
+@property(nonatomic, strong) GADRewardedAd *rewardedAd;
 @end
+
