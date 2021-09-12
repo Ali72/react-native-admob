@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "cleanYarn": "rm -rf node_modules/react-native-admob;rm -f yarn.lock",
     "updateIos": "cd ios;rm -f Podfile.lock;pod install --repo-update;cd ..",
-    "iosInstall": "yarn cleanYarn;yarn install;yarn updateIos"
+    "iosInstall": "yarn cleanYarn;yarn install;yarn updateIos",
+    "androidInstall": "yarn cleanYarn;yarn install"
   },
   "dependencies": {
     "react": "17.0.2",
