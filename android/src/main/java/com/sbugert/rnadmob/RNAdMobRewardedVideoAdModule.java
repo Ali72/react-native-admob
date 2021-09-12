@@ -37,10 +37,10 @@ public class RNAdMobRewardedVideoAdModule extends ReactContextBaseJavaModule {
   public static final String EVENT_AD_FAILED_TO_LOAD = "rewardedVideoAdFailedToLoad";
   public static final String EVENT_AD_OPENED = "rewardedVideoAdOpened";
   public static final String EVENT_AD_CLOSED = "rewardedVideoAdClosed";
-  public static final String EVENT_AD_LEFT_APPLICATION = "rewardedVideoAdLeftApplication";
+  public static final String EVENT_AD_LEFT_APPLICATION = "rewardedVideoAdLeftApplication";//deprecated
   public static final String EVENT_REWARDED = "rewardedVideoAdRewarded";
-  public static final String EVENT_VIDEO_STARTED = "rewardedVideoAdVideoStarted";
-  public static final String EVENT_VIDEO_COMPLETED = "rewardedVideoAdVideoCompleted";
+  public static final String EVENT_VIDEO_STARTED = "rewardedVideoAdVideoStarted";//deprecated
+  public static final String EVENT_VIDEO_COMPLETED = "rewardedVideoAdVideoCompleted";//deprecated
 
   RewardedAd mRewardedAd;
   String adUnitID;
@@ -82,11 +82,10 @@ public class RNAdMobRewardedVideoAdModule extends ReactContextBaseJavaModule {
           break;
       }
       WritableMap event = Arguments.createMap();
-      WritableMap error = Arguments.createMap();
       event.putString("message", errorMessage);
       event.putString("adUnitId", adUnitID);
       sendEvent(EVENT_AD_FAILED_TO_LOAD, event);
-      mRequestAdPromise.reject(event.getString("code"), event.getString("message"));
+      mRequestAdPromise.reject(errorString, errorMessage);
     }
 
   };
@@ -150,58 +149,44 @@ public class RNAdMobRewardedVideoAdModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void requestAd(final Promise promise) {
-    UiThreadUtil.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        if (isLoaded) {
-          promise.reject("E_AD_ALREADY_LOADED", "Ad is already loaded.");
-        } else {
-          mRequestAdPromise = promise;
+    UiThreadUtil.runOnUiThread(() -> {
+      if (isLoaded) {
+        promise.reject("E_AD_ALREADY_LOADED", "Ad is already loaded.");
+      } else {
+        mRequestAdPromise = promise;
 
-          AdRequest adRequest = new AdRequest.Builder().build();
-          RewardedAd.load(getReactApplicationContext(), adUnitID, adRequest, rewardedAdLoadCallback);
-        }
+        AdRequest adRequest = new AdRequest.Builder().build();
+        RewardedAd.load(getReactApplicationContext(), adUnitID, adRequest, rewardedAdLoadCallback);
       }
     });
   }
 
-  OnUserEarnedRewardListener onUserEarnedRewardListener = new OnUserEarnedRewardListener() {
-    @Override
-    public void onUserEarnedReward(@NonNull @NotNull RewardItem rewardItem) {
-      WritableMap reward = Arguments.createMap();
+  OnUserEarnedRewardListener onUserEarnedRewardListener = rewardItem -> {
+    WritableMap reward = Arguments.createMap();
 
-      reward.putInt("amount", rewardItem.getAmount());
-      reward.putString("type", rewardItem.getType());
+    reward.putInt("amount", rewardItem.getAmount());
+    reward.putString("type", rewardItem.getType());
 
-      sendEvent(EVENT_REWARDED, reward);
-    }
+    sendEvent(EVENT_REWARDED, reward);
   };
 
   @ReactMethod
   public void showAd(final Promise promise) {
-    UiThreadUtil.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        Activity currentActivity = getCurrentActivity();
-        if (currentActivity != null && isLoaded) {
-          mRewardedAd.show(currentActivity, onUserEarnedRewardListener);
-          promise.resolve(null);
-          isLoaded = false;
+    UiThreadUtil.runOnUiThread(() -> {
+      Activity currentActivity = getCurrentActivity();
+      if (currentActivity != null && isLoaded) {
+        mRewardedAd.show(currentActivity, onUserEarnedRewardListener);
+        promise.resolve(null);
+        isLoaded = false;
 
-        } else {
-          promise.reject("E_AD_NOT_READY", "Ad is not ready.");
-        }
+      } else {
+        promise.reject("E_AD_NOT_READY", "Ad is not ready.");
       }
     });
   }
 
   @ReactMethod
   public void isReady(final Callback callback) {
-    UiThreadUtil.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        callback.invoke(isLoaded);
-      }
-    });
+      UiThreadUtil.runOnUiThread(() -> callback.invoke(isLoaded));
   }
 }
