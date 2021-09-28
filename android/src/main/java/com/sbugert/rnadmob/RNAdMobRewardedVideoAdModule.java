@@ -25,7 +25,7 @@ import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
-import org.jetbrains.annotations.NotNull;
+
 
 import java.util.ArrayList;
 
@@ -149,44 +149,58 @@ public class RNAdMobRewardedVideoAdModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void requestAd(final Promise promise) {
-    UiThreadUtil.runOnUiThread(() -> {
-      if (isLoaded) {
-        promise.reject("E_AD_ALREADY_LOADED", "Ad is already loaded.");
-      } else {
-        mRequestAdPromise = promise;
+    UiThreadUtil.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if (isLoaded) {
+          promise.reject("E_AD_ALREADY_LOADED", "Ad is already loaded.");
+        } else {
+          mRequestAdPromise = promise;
 
-        AdRequest adRequest = new AdRequest.Builder().build();
-        RewardedAd.load(getReactApplicationContext(), adUnitID, adRequest, rewardedAdLoadCallback);
+          AdRequest adRequest = new AdRequest.Builder().build();
+          RewardedAd.load(getReactApplicationContext(), adUnitID, adRequest, rewardedAdLoadCallback);
+        }
       }
     });
   }
 
-  OnUserEarnedRewardListener onUserEarnedRewardListener = rewardItem -> {
-    WritableMap reward = Arguments.createMap();
+  OnUserEarnedRewardListener onUserEarnedRewardListener = new OnUserEarnedRewardListener() {
+    @Override
+    public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
+      WritableMap reward = Arguments.createMap();
 
-    reward.putInt("amount", rewardItem.getAmount());
-    reward.putString("type", rewardItem.getType());
+      reward.putInt("amount", rewardItem.getAmount());
+      reward.putString("type", rewardItem.getType());
 
-    sendEvent(EVENT_REWARDED, reward);
+      RNAdMobRewardedVideoAdModule.this.sendEvent(EVENT_REWARDED, reward);
+    }
   };
 
   @ReactMethod
   public void showAd(final Promise promise) {
-    UiThreadUtil.runOnUiThread(() -> {
-      Activity currentActivity = getCurrentActivity();
-      if (currentActivity != null && isLoaded) {
-        mRewardedAd.show(currentActivity, onUserEarnedRewardListener);
-        promise.resolve(null);
-        isLoaded = false;
+    UiThreadUtil.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        Activity currentActivity = RNAdMobRewardedVideoAdModule.this.getCurrentActivity();
+        if (currentActivity != null && isLoaded) {
+          mRewardedAd.show(currentActivity, onUserEarnedRewardListener);
+          promise.resolve(null);
+          isLoaded = false;
 
-      } else {
-        promise.reject("E_AD_NOT_READY", "Ad is not ready.");
+        } else {
+          promise.reject("E_AD_NOT_READY", "Ad is not ready.");
+        }
       }
     });
   }
 
   @ReactMethod
   public void isReady(final Callback callback) {
-      UiThreadUtil.runOnUiThread(() -> callback.invoke(isLoaded));
+      UiThreadUtil.runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          callback.invoke(isLoaded);
+        }
+      });
   }
 }
