@@ -49,9 +49,11 @@ RCT_EXPORT_MODULE();
         kEventAdLeftApplication ];
 }
 - (instancetype)init{
-    interstitialAds = [[NSMutableDictionary alloc] init];
-    interstitialAdLoadRequests = [[NSMutableDictionary alloc] init];
-    requestAdPromises = [[NSMutableDictionary alloc] init];
+    if ((self = [super init])) {
+        interstitialAds = [[NSMutableDictionary alloc] init];
+        interstitialAdLoadRequests = [[NSMutableDictionary alloc] init];
+        requestAdPromises = [[NSMutableDictionary alloc] init];
+    }
     [[NSNotificationCenter defaultCenter]
      addObserver:self
      selector:@selector(willLeaveApplication:)
