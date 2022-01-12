@@ -167,8 +167,8 @@ class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
         this.adView.setAdUnitId(adUnitID);
     }
 
-    public void setTestDevices(String[] testDevices) {
-        this.testDevices = testDevices;
+    public void setTestDevices(ReadableArray testDevices) {
+      Utils.setTestDevices(testDevices);
     }
 
     public void setAdSize(AdSize adSize) {
@@ -269,9 +269,7 @@ public class RNPublisherBannerViewManager extends ViewGroupManager<ReactPublishe
 
     @ReactProp(name = PROP_TEST_DEVICES)
     public void setPropTestDevices(final ReactPublisherAdView view, final ReadableArray testDevices) {
-        ReadableNativeArray nativeArray = (ReadableNativeArray)testDevices;
-        ArrayList<Object> list = nativeArray.toArrayList();
-        view.setTestDevices(list.toArray(new String[list.size()]));
+        view.setTestDevices(testDevices);
     }
 
     private AdSize getAdSizeFromString(String adSize) {

@@ -153,7 +153,7 @@ RCT_EXPORT_METHOD(requestAd:(NSString *)adUnitID resolve:(RCTPromiseResolveBlock
             promise.resolve = resolve;
             promise.reject = reject;
             [requestAdPromises setObject:promise  forKey:adUnitID];
-//            resolve(nil);
+//            resolve(nil); will resolve in somewhere else
         }
 
     }

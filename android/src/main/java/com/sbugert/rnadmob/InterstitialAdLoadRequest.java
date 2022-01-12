@@ -16,9 +16,10 @@ public class InterstitialAdLoadRequest {
 
 
 
-  InterstitialAdLoadRequest(ReactApplicationContext c, String Id){
+  InterstitialAdLoadRequest(ReactApplicationContext c, String Id, InterstitialAdLoadCallback loadCallback){
     UnitId = Id;
     mContext = c;
+    this.loadCallback = loadCallback;
   }
 
   public void loadAd() {

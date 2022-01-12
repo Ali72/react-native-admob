@@ -1,9 +1,11 @@
 package com.sbugert.rnadmob;
 
 import android.content.Context;
+import android.os.Build;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -22,17 +24,19 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 class ReactAdView extends ReactViewGroup {
 
     protected AdView adView;
-
     String adUnitID;
-    String[] testDevices;
     AdSize adSize;
 
     public ReactAdView(final Context context) {
@@ -124,16 +128,6 @@ class ReactAdView extends ReactViewGroup {
 
     public void loadBanner() {
         AdRequest.Builder adRequestBuilder = new AdRequest.Builder();
-        // todo:: add test devices at first configuration
-//        if (testDevices != null) {
-//            for (int i = 0; i < testDevices.length; i++) {
-//                String testDevice = testDevices[i];
-//                if (testDevice == "SIMULATOR") {
-//                    testDevice = AdRequest.DEVICE_ID_EMULATOR;
-//                }
-//                adRequestBuilder.addTestDevice(testDevice);
-//            }
-//        }
         AdRequest adRequest = adRequestBuilder.build();
         this.adView.loadAd(adRequest);
     }
@@ -148,8 +142,8 @@ class ReactAdView extends ReactViewGroup {
         this.adView.setAdUnitId(adUnitID);
     }
 
-    public void setTestDevices(String[] testDevices) {
-        this.testDevices = testDevices;
+    public void setTestDevices(ReadableArray testDevices) {
+      Utils.setTestDevices(testDevices);
     }
 
     public void setAdSize(AdSize adSize) {
@@ -222,9 +216,7 @@ public class RNAdMobBannerViewManager extends ViewGroupManager<ReactAdView> {
 
     @ReactProp(name = PROP_TEST_DEVICES)
     public void setPropTestDevices(final ReactAdView view, final ReadableArray testDevices) {
-        ReadableNativeArray nativeArray = (ReadableNativeArray)testDevices;
-        ArrayList<Object> list = nativeArray.toArrayList();
-        view.setTestDevices(list.toArray(new String[list.size()]));
+        view.setTestDevices(testDevices);
     }
 
     private AdSize getAdSizeFromString(String adSize) {
