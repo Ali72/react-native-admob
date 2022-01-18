@@ -30,8 +30,6 @@ import java.util.Map;
 class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
 
     protected AdManagerAdView adView;
-
-    String[] testDevices;
     AdSize[] validAdSizes;
     String adUnitID;
     AdSize adSize;
@@ -143,16 +141,6 @@ class ReactPublisherAdView extends ReactViewGroup implements AppEventListener {
         this.adView.setAdSizes(adSizesArray);
 
         AdManagerAdRequest.Builder adRequestBuilder = new AdManagerAdRequest.Builder();
-        // todo:: add test device in request configuration
-//        if (testDevices != null) {
-//            for (int i = 0; i < testDevices.length; i++) {
-//                String testDevice = testDevices[i];
-//                if (testDevice == "SIMULATOR") {
-//                    testDevice = AdManagerAdRequest.DEVICE_ID_EMULATOR;
-//                }
-//                adRequestBuilder.addTestDevice(testDevice);
-//            }
-//        }
         AdManagerAdRequest adRequest = adRequestBuilder.build();
         this.adView.loadAd(adRequest);
     }

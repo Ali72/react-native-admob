@@ -27,7 +27,6 @@ import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
