@@ -35,7 +35,7 @@
         UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
         UIViewController *rootViewController = [keyWindow rootViewController];
 
-        _bannerView = [[GAMBannerView alloc] initWithAdSize:kGADAdSizeBanner];
+        _bannerView = [[GAMBannerView alloc] initWithAdSize:GADAdSizeBanner];
         _bannerView.delegate = self;
         _bannerView.adSizeDelegate = self;
         _bannerView.appEventDelegate = self;
@@ -45,7 +45,7 @@
     
     [[NSNotificationCenter defaultCenter]
      addObserver:self
-     selector:@selector(willLeaveApplication:)
+     selector:@selector(willBackgroundApplication:)
      name:UIApplicationWillResignActiveNotification
      object:nil];
     return self;
@@ -70,7 +70,7 @@
     __block NSMutableArray *validAdSizes = [[NSMutableArray alloc] initWithCapacity:adSizes.count];
     [adSizes enumerateObjectsUsingBlock:^(id jsonValue, NSUInteger idx, __unused BOOL *stop) {
         GADAdSize adSize = [RCTConvert GADAdSize:jsonValue];
-        if (GADAdSizeEqualToSize(adSize, kGADAdSizeInvalid)) {
+        if (GADAdSizeEqualToSize(adSize, GADAdSizeInvalid)) {
             RCTLogWarn(@"Invalid adSize %@", jsonValue);
         } else {
             [validAdSizes addObject:NSValueFromGADAdSize(adSize)];
@@ -81,7 +81,7 @@
 
 - (void)setTestDevices:(NSArray *)testDevices
 {
-    _testDevices = RNAdMobProcessTestDevices(testDevices, kGADSimulatorID);
+    _testDevices = RNAdMobProcessTestDevices(testDevices, GADSimulatorID);
 }
 
 -(void)layoutSubviews
@@ -133,14 +133,7 @@ didFailToReceiveAdWithError:(NSError *)error
 
 /// Tells the delegate that a user click will open another app (such as
 /// the App Store), backgrounding the current app.
-//- (void)bannerViewWillLeaveApplication:(GAMBannerView *)adView
-//{
-//    if (self.onAdLeftApplication) {
-//        self.onAdLeftApplication(@{});
-//    }
-//}
-
-- (void)willLeaveApplication:(id) sender
+- (void)willBackgroundApplication:(id) sender
 {
     if (self.onAdLeftApplication) {
             self.onAdLeftApplication(@{});

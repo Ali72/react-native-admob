@@ -56,7 +56,7 @@ RCT_EXPORT_MODULE();
     }
     [[NSNotificationCenter defaultCenter]
      addObserver:self
-     selector:@selector(willLeaveApplication:)
+     selector:@selector(willBackgroundApplication:)
      name:UIApplicationWillResignActiveNotification
      object:nil];
     return self;
@@ -129,7 +129,7 @@ RCT_EXPORT_METHOD(setAdUnitID:(NSString *)adUnitID)
 
 RCT_EXPORT_METHOD(setTestDevices:(NSArray *)testDevices)
 {
-    _testDevices = RNAdMobProcessTestDevices(testDevices, kGADSimulatorID);
+    _testDevices = RNAdMobProcessTestDevices(testDevices, GADSimulatorID);
     GADMobileAds.sharedInstance.requestConfiguration.testDeviceIdentifiers = _testDevices;
 }
 
@@ -194,8 +194,8 @@ RCT_EXPORT_METHOD(isReady:(NSString *)adUnitID callback:(RCTResponseSenderBlock)
 
 #pragma mark GADInterstitialDelegate
 
-//MARK:in V8 Change to👇
-- (void)adDidPresentFullScreenContent:(id)ad {
+//MARK:in V9 Change to👇
+- (void)adWillPresentFullScreenContent:(id)ad {
     NSLog(@"Ad did present full screen content.");
     GADInterstitialAd *interstitialAd = (GADInterstitialAd *)ad;
     InterstitialAdRequest *request = (InterstitialAdRequest *) [interstitialAdLoadRequests objectForKey:interstitialAd.adUnitID];
@@ -227,7 +227,7 @@ RCT_EXPORT_METHOD(isReady:(NSString *)adUnitID callback:(RCTResponseSenderBlock)
     }
 }
 
-- (void)willLeaveApplication:(id) sender
+- (void)willBackgroundApplication:(id) sender
 {
     if (hasListeners) {
         [self sendEventWithName:kEventAdLeftApplication body:nil];

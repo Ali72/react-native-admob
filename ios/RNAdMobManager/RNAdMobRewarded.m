@@ -66,7 +66,7 @@ RCT_EXPORT_METHOD(setAdUnitID:(NSString *)adUnitID)
 
 RCT_EXPORT_METHOD(setTestDevices:(NSArray *)testDevices)
 {
-    _testDevices = RNAdMobProcessTestDevices(testDevices, kGADSimulatorID);
+    _testDevices = RNAdMobProcessTestDevices(testDevices, GADSimulatorID);
      GADMobileAds.sharedInstance.requestConfiguration.testDeviceIdentifiers = _testDevices;
 }
 
@@ -77,7 +77,7 @@ RCT_EXPORT_METHOD(requestAd:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromise
 
     [[NSNotificationCenter defaultCenter]
      addObserver:self
-     selector:@selector(willLeaveApplication:)
+     selector:@selector(willBackgroundApplication:)
      name:UIApplicationWillResignActiveNotification
      object:nil];
 
@@ -143,8 +143,8 @@ RCT_EXPORT_METHOD(isReady:(RCTResponseSenderBlock)callback)
 
 #pragma mark GADRewardBasedVideoAdDelegate
 
-- (void)adDidPresentFullScreenContent:(id)ad {
-    NSLog(@"Ad did present full screen content.");
+- (void)adWillPresentFullScreenContent:(id)ad {
+    NSLog(@"Ad will present full screen content.");
     if (hasListeners){
         [self sendEventWithName:kEventAdOpened body:nil];
     }
@@ -164,7 +164,7 @@ RCT_EXPORT_METHOD(isReady:(RCTResponseSenderBlock)callback)
     }
 }
 
-- (void)willLeaveApplication:(id) sender
+- (void)willBackgroundApplication:(id) sender
 {
     if (hasListeners) {
         [self sendEventWithName:kEventAdLeftApplication body:nil];

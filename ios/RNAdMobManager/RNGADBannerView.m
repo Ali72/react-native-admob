@@ -30,7 +30,7 @@
         super.backgroundColor = [UIColor clearColor];
         UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
         UIViewController *rootViewController = [keyWindow rootViewController];
-        _bannerView = [[GADBannerView alloc] initWithAdSize:kGADAdSizeBanner];
+        _bannerView = [[GADBannerView alloc] initWithAdSize:GADAdSizeBanner];
         _bannerView.delegate = self;
         _bannerView.adSizeDelegate = self;
         _bannerView.rootViewController = rootViewController;
@@ -39,7 +39,7 @@
     
     [[NSNotificationCenter defaultCenter]
      addObserver:self
-     selector:@selector(willLeaveApplication:)
+     selector:@selector(willBackgroundApplication:)
      name:UIApplicationWillResignActiveNotification
      object:nil];
     return self;
@@ -71,7 +71,7 @@
 
 - (void)setTestDevices:(NSArray *)testDevices
 {
-    _testDevices = RNAdMobProcessTestDevices(testDevices, kGADSimulatorID);
+    _testDevices = RNAdMobProcessTestDevices(testDevices, GADSimulatorID);
 }
 
 -(void)layoutSubviews
@@ -118,14 +118,7 @@ didFailToReceiveAdWithError:(NSError *)error
 
 /// Tells the delegate that a user click will open another app (such as
 /// the App Store), backgrounding the current app.
-//- (void)bannerViewWillLeaveApplication:(__unused GADBannerView *)bannerView
-//{
-//    if (self.onAdLeftApplication) {
-//        self.onAdLeftApplication(@{});
-//    }
-//}
-
-- (void)willLeaveApplication:(id) sender
+- (void)willBackgroundApplication:(id) sender
 {
     if (self.onAdLeftApplication) {
             self.onAdLeftApplication(@{});
