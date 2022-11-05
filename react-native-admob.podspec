@@ -23,6 +23,6 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig    = {
     'FRAMEWORK_SEARCH_PATHS' => '"$(PODS_ROOT)/Google-Mobile-Ads-SDK/Frameworks/**"',
   }
-  s.dependency 'Google-Mobile-Ads-SDK', '~>9.0.0'
+  s.dependency 'Google-Mobile-Ads-SDK'
   s.dependency 'React'
 end
