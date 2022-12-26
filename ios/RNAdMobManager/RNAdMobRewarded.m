@@ -19,12 +19,12 @@ static NSString *const kEventVideoCompleted = @"rewardedVideoAdVideoCompleted";
 
 @implementation RNAdMobRewarded
 {
-    //    GADRewardedAd  *rewardedAd;
     NSString *_adUnitID;
     NSArray *_testDevices;
     RCTPromiseResolveBlock _requestAdResolve;
     RCTPromiseRejectBlock _requestAdReject;
     BOOL hasListeners;
+    BOOL statusBarHidden;
 }
 
 - (dispatch_queue_t)methodQueue
@@ -51,6 +51,21 @@ RCT_EXPORT_MODULE();
         kEventAdLeftApplication,
         kEventVideoCompleted ];
 }
+
+- (instancetype)init{
+    if ((self = [super init])) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self->statusBarHidden = [UIApplication sharedApplication].statusBarHidden;
+        });
+    }
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(willBackgroundApplication:)
+     name:UIApplicationWillResignActiveNotification
+     object:nil];
+    return self;
+}
+
 - (void)dealloc {
     NSLog(@"RNAdMobRewarded Object deallocated");
     _rewardedAd = nil;
@@ -74,12 +89,6 @@ RCT_EXPORT_METHOD(requestAd:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromise
 {
     _requestAdResolve = resolve;
     _requestAdReject = reject;
-
-    [[NSNotificationCenter defaultCenter]
-     addObserver:self
-     selector:@selector(willBackgroundApplication:)
-     name:UIApplicationWillResignActiveNotification
-     object:nil];
 
     GADMobileAds.sharedInstance.requestConfiguration.testDeviceIdentifiers = _testDevices;
 
@@ -145,6 +154,10 @@ RCT_EXPORT_METHOD(isReady:(RCTResponseSenderBlock)callback)
 
 - (void)adWillPresentFullScreenContent:(id)ad {
     NSLog(@"Ad will present full screen content.");
+    //Hide the status bar when full-screen ads shown (fix bug for iphone14)
+    if (statusBarHidden == NO){
+        [[UIApplication sharedApplication] setStatusBarHidden:YES];
+    }
     if (hasListeners){
         [self sendEventWithName:kEventAdOpened body:nil];
     }
@@ -152,6 +165,9 @@ RCT_EXPORT_METHOD(isReady:(RCTResponseSenderBlock)callback)
 }
 - (void)adDidDismissFullScreenContent:(id)ad {
     NSLog(@"Ad did dismiss full screen content.");
+    if (statusBarHidden == NO){
+        [[UIApplication sharedApplication] setStatusBarHidden:NO];
+    }
     if (hasListeners) {
         [self sendEventWithName:kEventAdClosed body:nil];
     }

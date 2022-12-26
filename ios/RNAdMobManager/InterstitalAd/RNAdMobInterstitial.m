@@ -23,7 +23,9 @@ static NSString *const kEventAdLeftApplication = @"interstitialAdLeftApplication
     NSMutableDictionary *interstitialAds;
     NSMutableDictionary *interstitialAdLoadRequests;
     NSMutableDictionary *requestAdPromises;
+    GADInterstitialAd *shownInterstitial;//use it to make strong ref for fullScreenContentDelegate
     BOOL hasListeners;
+    BOOL statusBarHidden;
 }
 
 - (dispatch_queue_t)methodQueue
@@ -53,6 +55,11 @@ RCT_EXPORT_MODULE();
         interstitialAds = [[NSMutableDictionary alloc] init];
         interstitialAdLoadRequests = [[NSMutableDictionary alloc] init];
         requestAdPromises = [[NSMutableDictionary alloc] init];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self->statusBarHidden = [UIApplication sharedApplication].statusBarHidden;
+        });
+
     }
     [[NSNotificationCenter defaultCenter]
      addObserver:self
@@ -63,7 +70,7 @@ RCT_EXPORT_MODULE();
 }
 - (void)dealloc {
     NSLog(@"interstitial Object deallocated");
-    //    interstitial = nil;
+    shownInterstitial = nil;
     interstitialAds = nil;
     interstitialAdLoadRequests = nil;
     requestAdPromises = nil;
@@ -75,7 +82,7 @@ RCT_EXPORT_MODULE();
 
 RCT_EXPORT_METHOD(setAdUnitID:(NSString *)adUnitID)
 {
-    //    _adUnitID = adUnitID;
+
     NSLog(@"adsLog setAdUnitID=>%@",adUnitID);
     if (![interstitialAdLoadRequests valueForKey:adUnitID]){
         NSLog(@"adsLog setAdUnitID not exist=>%@",adUnitID);
@@ -102,12 +109,12 @@ RCT_EXPORT_METHOD(setAdUnitID:(NSString *)adUnitID)
                 }
                 return;
             }
-
+            NSLog(@"adsLog interstitial ad received");
             InterstitialAdRequest *request =  (InterstitialAdRequest *)([self->interstitialAdLoadRequests valueForKey:adUnitID]);
             request.isLoading = false;
             request.isLoaded = true;
             [self->interstitialAdLoadRequests setObject:request  forKey:adUnitID];
-            ad.fullScreenContentDelegate = self;
+
             if (self->hasListeners) {
                 [self sendEventWithName:kEventAdLoaded body:nil];
             }
@@ -169,6 +176,8 @@ RCT_EXPORT_METHOD(showAd:(NSString *)adUnitID resolve:(RCTPromiseResolveBlock)re
 
     if ([self isReadyAd:adUnitID]){
         NSLog(@"adsLog ready=>%@",adUnitID);
+        shownInterstitial = interstitialAd;
+        interstitialAd.fullScreenContentDelegate = self;
         [interstitialAd presentFromRootViewController:[UIApplication sharedApplication].delegate.window.rootViewController];
         resolve(nil);
     }else{
@@ -194,9 +203,15 @@ RCT_EXPORT_METHOD(isReady:(NSString *)adUnitID callback:(RCTResponseSenderBlock)
 
 #pragma mark GADInterstitialDelegate
 
-//MARK:in V9 Change to👇
-- (void)adWillPresentFullScreenContent:(id)ad {
-    NSLog(@"Ad did present full screen content.");
+//MARK: in V9 Change to👇
+- (void)adWillPresentFullScreenContent:(nonnull id<GADFullScreenPresentingAd>)ad {
+    NSLog(@"adsLog Ad did present full screen content.");
+    //Hide the status bar when full-screen ads shown (fix bug for iphone14)
+    NSLog(@"adsLog statusBarHidden1: %@",statusBarHidden ? @"YES" : @"NO");
+    if (statusBarHidden == NO){
+        [[UIApplication sharedApplication] setStatusBarHidden:YES];
+    }
+
     GADInterstitialAd *interstitialAd = (GADInterstitialAd *)ad;
     InterstitialAdRequest *request = (InterstitialAdRequest *) [interstitialAdLoadRequests objectForKey:interstitialAd.adUnitID];
     request.isLoading = false;
@@ -209,19 +224,25 @@ RCT_EXPORT_METHOD(isReady:(NSString *)adUnitID callback:(RCTResponseSenderBlock)
 
 }
 
-- (void)ad:(id)ad didFailToPresentFullScreenContentWithError:(NSError *)error {
-    NSLog(@"Ad failed to present full screen content with error %@.", [error localizedDescription]);
-
+- (void)ad:(nonnull id<GADFullScreenPresentingAd>)ad
+didFailToPresentFullScreenContentWithError:(nonnull NSError *)error  {
+    NSLog(@"adsLog Ad failed to present full screen content with error %@.", [error localizedDescription]);
     if (hasListeners){
         [self sendEventWithName:kEventAdFailedToOpen body:nil];
     }
 }
 
 
-- (void)adDidDismissFullScreenContent:(id)ad {
-    NSLog(@"Ad did dismiss full screen content.");
+- (void)adDidDismissFullScreenContent:(nonnull id<GADFullScreenPresentingAd>)ad {
+    NSLog(@"adsLog Ad did dismiss full screen content.");
+    NSLog(@"adsLog statusBarHidden2: %@",statusBarHidden ? @"YES" : @"NO");
+    if (statusBarHidden == NO){
+        [[UIApplication sharedApplication] setStatusBarHidden:NO];
+    }
+
     GADInterstitialAd *interstitialAd = (GADInterstitialAd *)ad;
     [interstitialAds removeObjectForKey:interstitialAd.adUnitID];
+    shownInterstitial = nil;
     if (hasListeners) {
         [self sendEventWithName:kEventAdClosed body:nil];
     }
