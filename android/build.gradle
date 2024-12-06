@@ -43,7 +43,7 @@ android {
     buildToolsVersion safeExtGet('buildToolsVersion', "30.0.3")
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 23
         targetSdkVersion safeExtGet('targetSdkVersion', 30)
     }
     buildTypes {
